@@ -17,7 +17,10 @@ mongoose
   })
 
 const todoSchema = new mongoose.Schema({
-  title: String,
+  title: {
+    type: String,
+    required: true,
+  },
   description: String,
 })
 
@@ -34,13 +37,42 @@ app.post("/todos", async (req, res) => {
     res.status(201).json(model)
   } catch (error) {
     console.error("Error saving todo:", error)
-    res.status(500).json({ error: "Failed to save todo" })
+    res.status(500).json({ error: error.message })
   }
 })
 
 //get all todo items
-app.get("/todos", (req, res) => {
-  res.json(todos)
+app.get("/todos", async (req, res) => {
+  try {
+    todoModel.find().then((todos) => {
+      res.json(todos)
+    })
+  } catch (error) {
+    console.error("Error fetching todos:", error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+app.put("/todos/:id", async (req, res) => {
+  const { id } = req.params
+  const { title, description } = req.body
+  try {
+    const updatedTodo = await todoModel.findByIdAndUpdate(
+      id,
+      {
+        title,
+        description,
+      },
+      { new: true }
+    )
+    if (!updatedTodo) {
+      return res.status(404).json({ error: "Todo not found" })
+    }
+    res.json(updatedTodo)
+  } catch (error) {
+    console.error("Error updating todo:", error)
+    res.status(500).json({ error: error.message })
+  }
 })
 
 app.listen(port, () => {
